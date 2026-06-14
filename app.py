@@ -139,8 +139,9 @@ def analyze_dragonfruit_features(img: Image.Image) -> tuple:
     # Value
     V = Cmax
 
-    # Saturation
-    S = np.where(Cmax > 0.01, delta / Cmax, 0.0)
+    # Saturation — gunakan np.divide dengan 'where' agar tidak ada division warning
+    # saat Cmax == 0 (pixel hitam murni)
+    S = np.divide(delta, Cmax, out=np.zeros_like(Cmax), where=(Cmax > 0.01))
 
     # Hue (0–360)
     H = np.zeros_like(R)
@@ -640,7 +641,11 @@ if __name__ == "__main__":
 
 
 # ─── Startup Preload (untuk gunicorn/Railway) ────────────────────────────────
-# Pra-load model saat module diimport agar request pertama tidak timeout
+# Model di-load SEKALI saat module pertama kali diimport oleh worker.
+# CATATAN: Jangan gunakan --preload di Procfile bersama startup di sini,
+# karena --preload menyebabkan model di-load di master process lalu di-fork
+# ke worker (double memory). Tanpa --preload, setiap worker load sendiri
+# tapi lebih hemat RAM di Railway (1 worker = 1x load).
 print(f"\n[DragonGrade] Startup — MODEL_PATH = {MODEL_PATH}")
 try:
     get_model()
