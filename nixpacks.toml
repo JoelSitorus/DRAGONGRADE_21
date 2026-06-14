@@ -1,6 +1,5 @@
-# Nixpacks config — install Python 3.13 + Node.js 20 sekaligus
 [phases.setup]
-nixPkgs = ["python313", "nodejs_20", "gcc"]
+nixPkgs = ["python311", "nodejs_20", "gcc"]
 
 [phases.install]
 cmds = [
