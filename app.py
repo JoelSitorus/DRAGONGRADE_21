@@ -14,20 +14,19 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from PIL import Image
 
-# ─── TensorFlow / Keras import ───────────────────────────────────────────────
-# tensorflow-cpu==2.20.0 adalah versi pertama yang support Python 3.13 (cp313 wheel).
-# Di TF 2.20, Keras 3.x digunakan secara default.
-# 'from tensorflow.keras.models import load_model' tetap bekerja sebagai alias,
-# tapi import langsung dari 'keras' lebih stabil di Keras 3.
+# ─── TFLite import ───────────────────────────────────────────────────────────
+# Menggunakan tflite_runtime (ringan ~2MB) atau fallback ke TF biasa.
 try:
-    from keras.models import load_model          # Keras 3 (TF 2.20+)
+    import tflite_runtime.interpreter as tflite
+    TFLiteInterpreter = tflite.Interpreter
 except ImportError:
-    from tensorflow.keras.models import load_model  # Keras 2 fallback (TF <=2.17)
+    import tensorflow as tf
+    TFLiteInterpreter = tf.lite.Interpreter
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 # Cari model di folder yang sama dengan app.py (untuk Railway/production)
 _BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
-_MODEL_DEFAULT = os.path.join(_BASE_DIR, "best_mobilenetv2_dragonfruit.keras")
+_MODEL_DEFAULT = os.path.join(_BASE_DIR, "model_dragonfruit.tflite")
 MODEL_PATH = os.environ.get("MODEL_PATH", _MODEL_DEFAULT)
 IMG_SIZE   = (224, 224)
 # Kelas diurutkan alfabetis sesuai flow_from_directory Keras
@@ -61,17 +60,29 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 model = None
 
 def get_model():
+    """Load TFLite interpreter (ringan, cepat). Di-cache di variabel global."""
     global model
     if model is None:
         if not os.path.exists(MODEL_PATH):
             raise FileNotFoundError(
                 f"Model tidak ditemukan: {MODEL_PATH}\n"
-                f"Pastikan file 'Best_MobileNetV2_DragonFruit.keras' ada di folder backend/"
+                "Jalankan convert_to_tflite.py di lokal, lalu upload file .tflite ke repo."
             )
-        print(f"[DragonGrade] Loading model dari {MODEL_PATH} ...")
-        model = load_model(MODEL_PATH)
-        print("[DragonGrade] Model siap ✓")
+        print(f"[DragonGrade] Loading TFLite model dari {MODEL_PATH} ...")
+        interpreter = TFLiteInterpreter(model_path=MODEL_PATH)
+        interpreter.allocate_tensors()
+        model = interpreter
+        print("[DragonGrade] TFLite model siap ✓")
     return model
+
+
+def tflite_predict(interpreter, arr):
+    """Jalankan inferensi TFLite. arr shape: (1,224,224,3) float32."""
+    inp  = interpreter.get_input_details()
+    out  = interpreter.get_output_details()
+    interpreter.set_tensor(inp[0]["index"], arr)
+    interpreter.invoke()
+    return interpreter.get_tensor(out[0]["index"])
 
 
 # ─── Image Quality Check ─────────────────────────────────────────────────────
@@ -139,9 +150,8 @@ def analyze_dragonfruit_features(img: Image.Image) -> tuple:
     # Value
     V = Cmax
 
-    # Saturation — gunakan np.divide dengan 'where' agar tidak ada division warning
-    # saat Cmax == 0 (pixel hitam murni)
-    S = np.divide(delta, Cmax, out=np.zeros_like(Cmax), where=(Cmax > 0.01))
+    # Saturation
+    S = np.where(Cmax > 0.01, delta / Cmax, 0.0)
 
     # Hue (0–360)
     H = np.zeros_like(R)
@@ -557,9 +567,9 @@ def predict():
             )
             return jsonify({"success": True, "result": result})
 
-        # Jalankan model prediksi
-        m      = get_model()
-        preds  = m.predict(arr, verbose=0)
+        # Jalankan model prediksi (TFLite - cepat)
+        interpreter = get_model()
+        preds  = tflite_predict(interpreter, arr)
         result = build_result(preds, visual_score)
         return jsonify({"success": True, "result": result})
 
@@ -641,11 +651,7 @@ if __name__ == "__main__":
 
 
 # ─── Startup Preload (untuk gunicorn/Railway) ────────────────────────────────
-# Model di-load SEKALI saat module pertama kali diimport oleh worker.
-# CATATAN: Jangan gunakan --preload di Procfile bersama startup di sini,
-# karena --preload menyebabkan model di-load di master process lalu di-fork
-# ke worker (double memory). Tanpa --preload, setiap worker load sendiri
-# tapi lebih hemat RAM di Railway (1 worker = 1x load).
+# Pra-load model saat module diimport agar request pertama tidak timeout
 print(f"\n[DragonGrade] Startup — MODEL_PATH = {MODEL_PATH}")
 try:
     get_model()
