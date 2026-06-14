@@ -1,0 +1,12 @@
+# Nixpacks config — install Python 3.13 + Node.js 20 sekaligus
+[phases.setup]
+nixPkgs = ["python313", "nodejs_20", "gcc"]
+
+[phases.install]
+cmds = [
+  "python -m venv /opt/venv && . /opt/venv/bin/activate && pip install -r requirements.txt",
+  "cd frontend && npm install && npm run build"
+]
+
+[start]
+cmd = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --preload"

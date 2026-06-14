@@ -1,0 +1,172 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════
+   DRAGONFRUIT VISION — Light Design System
+   Theme: Warm off-white + dragon-rose accents
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, monospace;
+  --radius:    14px;
+  --rad-sm:    8px;
+  --rad-pill:  999px;
+
+  --bg-base:       #fdf8f4;
+  --bg-surface:    #fff;
+  --bg-card:       #fff;
+  --bg-card-2:     #fff8f5;
+  --bg-muted:      #f5ece6;
+  --bg-subtle:     rgba(232,75,106,0.04);
+  --sidebar-bg:    #fff8f5;
+  --sidebar-border:#f0d9cc;
+
+  --brand-500:    #e84b6a;
+  --brand-dark:   #c93a58;
+  --brand-300:    #ff8fa3;
+  --brand-light:  #fff0f3;
+  --brand-mid:    #ffd6de;
+  --brand-grad:   linear-gradient(135deg, #e84b6a 0%, #ff8fa3 100%);
+  --brand-grad-h: linear-gradient(90deg, #e84b6a 0%, #ff8fa3 100%);
+
+  --text-primary:   #1e1208;
+  --text-secondary: #6b4f3a;
+  --text-muted:     #9e7f6b;
+  --text-faint:     #c4a898;
+
+  --border:       #e8ddd6;
+  --border-hover: #d4a896;
+  --border-brand: rgba(232,75,106,0.4);
+
+  --success:        #16a34a;
+  --success-bg:     #f0fdf4;
+  --success-border: #bbf7d0;
+  --warning:        #d97706;
+  --warning-bg:     #fffbeb;
+  --danger:         #dc2626;
+  --danger-bg:      #fff5f5;
+  --danger-border:  #fecaca;
+
+  --glow-brand:   0 4px 20px rgba(232,75,106,0.2);
+  --glow-success: 0 4px 16px rgba(22,163,74,0.15);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Base font 16px — standar browser, semua rem proporsional */
+html {
+  font-size: 16px;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  overflow: hidden;
+  font-family: var(--font-sans);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  overflow: hidden;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(232,75,106,0.25); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(232,75,106,0.5); }
+
+@keyframes scanMove {
+  0%   { top: 4px; opacity: 0.4; }
+  50%  { top: calc(100% - 4px); opacity: 1; }
+  100% { top: 4px; opacity: 0.4; }
+}
+@keyframes scan-sweep {
+  0%   { top: 4px; opacity: 0.4; }
+  50%  { top: calc(100% - 4px); opacity: 1; }
+  100% { top: 4px; opacity: 0.4; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse-brand { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border-hover); }
+
+.btn-brand {
+  background: var(--brand-grad-h);
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.btn-brand:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: var(--glow-brand); }
+.btn-brand:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-ghost {
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-ghost:hover { color: var(--text-primary); border-color: var(--border-hover); }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-muted) 25%, var(--bg-card-2) 50%, var(--bg-muted) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.scan-viewport {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fef2f4;
+  border: 1px solid var(--brand-mid);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ─── Responsive Layout ─── */
+.mobile-nav { display: none; }
+
+@media (min-width: 768px) {
+  .mobile-nav { display: none !important; }
+  .sidebar-desktop { display: flex !important; }
+}
+
+@media (max-width: 767px) {
+  html { font-size: 15px; }
+  .sidebar-desktop { display: none !important; }
+  .mobile-nav      { display: flex !important; }
+  .main-topbar     { padding-left: 1rem !important; padding-right: 1rem !important; }
+}
+
+/* Safe area untuk notch/home indicator iPhone */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-nav {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)) !important;
+  }
+}
